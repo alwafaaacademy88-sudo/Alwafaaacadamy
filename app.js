@@ -3033,76 +3033,98 @@ const auth = {
             } else {
                 router.navigate('dashboard');
             }
-            ['report-card-students', 'report-card-teachers', 'report-card-finance', 'report-card-attendance', 'report-card-exams'].forEach(show);
-            ['btn-quick-student', 'btn-quick-finance', 'btn-quick-attendance', 'btn-quick-exams'].forEach(show);
-
-            if (role === 'teacher') {
-                // Hide Dashboard Link
-                hide('nav-dashboard');
-                hide('nav-finance');
-                hide('nav-teachers');
-
-                // Hide specific Report Cards
-                hide('report-card-teachers');
-                hide('report-card-finance');
-            } else if (role === 'accountant') {
-                hide('nav-dashboard'); // Hide Dashboard for Accountant too
-                hide('nav-students');
-                hide('nav-teachers');
-                hide('nav-attendance');
-                hide('nav-exams');
-                hide('nav-classes');
-
-                // Hide specific Report Cards for Accountant
-                hide('report-card-students');
-                hide('report-card-teachers');
-                hide('report-card-attendance');
-                hide('report-card-exams');
-
-                // Hide Dashboard Quick Actions
-                hide('btn-quick-student');
-                hide('btn-quick-attendance');
-                hide('btn-quick-exams');
-            }
-        },
-
-        checkAccess(pageId) {
-            const user = store.currentUser;
-            if (!user) return false;
-            if (user.role === 'admin') return true;
-
-            const allowed = this.perms[user.role];
-            return allowed.includes(pageId);
+        } else {
+            // Error
+            errorEl.innerText = 'Password-ka waa qalad!';
+            errorEl.classList.remove('hidden');
+            // DEBUGGING LOGIN:
+            console.warn(`Login Failed. Entered: "${pass}" | Expected: "${auth.PASSWORDS[role]}"`);
         }
-    };
+    },
 
-    // Check for existing session (Optional, but good for refresh)
-    // For now, we force login on reload as per typical simple app request, but we can uncomment this if needed.
-    /*
-    if (localStorage.getItem('wa_currentUser')) {
-        store.currentUser = JSON.parse(localStorage.getItem('wa_currentUser'));
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('app-container').classList.remove('hidden');
-        auth.applyPermissions(store.currentUser.role);
+    logout() {
+        store.currentUser = null;
+        localStorage.removeItem('wa_currentUser');
+        window.location.reload();
+    },
+
+    applyPermissions(role) {
+        // Sidebar Hiding
+        const show = (id) => document.getElementById(id)?.classList.remove('hidden');
+        const hide = (id) => document.getElementById(id)?.classList.add('hidden');
+
+        // Reset sidebar and report cards first
+        ['nav-dashboard', 'nav-students', 'nav-teachers', 'nav-attendance', 'nav-finance', 'nav-reports', 'nav-exams', 'nav-classes'].forEach(show);
+        ['report-card-students', 'report-card-teachers', 'report-card-finance', 'report-card-attendance', 'report-card-exams'].forEach(show);
+        ['btn-quick-student', 'btn-quick-finance', 'btn-quick-attendance', 'btn-quick-exams'].forEach(show);
+
+        if (role === 'teacher') {
+            // Hide Dashboard Link
+            hide('nav-dashboard');
+            hide('nav-finance');
+            hide('nav-teachers');
+
+            // Hide specific Report Cards
+            hide('report-card-teachers');
+            hide('report-card-finance');
+        } else if (role === 'accountant') {
+            hide('nav-dashboard'); // Hide Dashboard for Accountant too
+            hide('nav-students');
+            hide('nav-teachers');
+            hide('nav-attendance');
+            hide('nav-exams');
+            hide('nav-classes');
+
+            // Hide specific Report Cards for Accountant
+            hide('report-card-students');
+            hide('report-card-teachers');
+            hide('report-card-attendance');
+            hide('report-card-exams');
+
+            // Hide Dashboard Quick Actions
+            hide('btn-quick-student');
+            hide('btn-quick-attendance');
+            hide('btn-quick-exams');
+        }
+    },
+
+    checkAccess(pageId) {
+        const user = store.currentUser;
+        if (!user) return false;
+        if (user.role === 'admin') return true;
+
+        const allowed = this.perms[user.role];
+        return allowed.includes(pageId);
     }
-    */
-    // Make auth global explicitly to ensure HTML onclick/onsubmit can find it
-    window.auth = auth;
-    window.renderDashboard = renderDashboard;
-    window.renderStudents = renderStudents;
-    window.renderTeachers = renderTeachers;
-    window.renderFinance = renderFinance;
-    window.renderAttendance = renderAttendance;
-    window.renderReports = renderReports;
-    window.renderClasses = renderClasses;
-    window.router = router;
+};
 
-    // --- Init ---
-    // Attach Login Listener safely
-    const loginForm = document.getElementById('login-form');
-    if(loginForm) {
-        loginForm.addEventListener('submit', (e) => auth.login(e));
-    }
+// Check for existing session (Optional, but good for refresh)
+// For now, we force login on reload as per typical simple app request, but we can uncomment this if needed.
+/*
+if (localStorage.getItem('wa_currentUser')) {
+    store.currentUser = JSON.parse(localStorage.getItem('wa_currentUser'));
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app-container').classList.remove('hidden');
+    auth.applyPermissions(store.currentUser.role);
+}
+*/
+// Make auth global explicitly to ensure HTML onclick/onsubmit can find it
+window.auth = auth;
+window.renderDashboard = renderDashboard;
+window.renderStudents = renderStudents;
+window.renderTeachers = renderTeachers;
+window.renderFinance = renderFinance;
+window.renderAttendance = renderAttendance;
+window.renderReports = renderReports;
+window.renderClasses = renderClasses;
+window.router = router;
 
-        router.navigate('dashboard');
-    lucide.createIcons();
+// --- Init ---
+// Attach Login Listener safely
+const loginForm = document.getElementById('login-form');
+if (loginForm) {
+    loginForm.addEventListener('submit', (e) => auth.login(e));
+}
+
+router.navigate('dashboard');
+lucide.createIcons();

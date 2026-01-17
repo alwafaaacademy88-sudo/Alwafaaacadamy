@@ -351,7 +351,22 @@ CREATE TABLE IF NOT EXISTS exams (
   scores jsonb,
   subjectHeaders jsonb,
   date date
-);</pre>
+);
+
+-- 6. FIX PERMISSIONS (IMPORTANT: Run this part too!)
+ALTER TABLE students DISABLE ROW LEVEL SECURITY;
+ALTER TABLE teachers DISABLE ROW LEVEL SECURITY;
+ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
+ALTER TABLE finance DISABLE ROW LEVEL SECURITY;
+ALTER TABLE exams DISABLE ROW LEVEL SECURITY;
+
+-- 7. REMOVE RESTRICTIONS (To allow smooth sync)
+ALTER TABLE attendance DROP CONSTRAINT IF EXISTS attendance_studentId_fkey;
+ALTER TABLE exams DROP CONSTRAINT IF EXISTS exams_studentId_fkey;
+
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;</pre>
                         </div>
                     </div>
 

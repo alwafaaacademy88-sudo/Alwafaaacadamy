@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="so" dir="ltr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Al-wafaaa Academy System</title>
+
+    <!-- Fonts: Cairo for Arabic/Somali support -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- jsPDF & AutoTable -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body class="bg-indigo-50 font-[Cairo] text-gray-700 overflow-hidden">
+
+    <!-- Login Screen -->
+    <div id="login-screen"
+        class="fixed inset-0 z-[100] bg-gradient-to-br from-blue-600 to-indigo-900 flex items-center justify-center p-4">
+        <div
+            class="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl w-full max-w-md shadow-2xl animate-scale-up">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-white rounded-2xl mx-auto flex items-center justify-center shadow-lg mb-4">
+                    <i data-lucide="graduation-cap" class="w-10 h-10 text-blue-600"></i>
+                </div>
+                <h1 class="text-3xl font-black text-white tracking-tight">AL-WAFAAA</h1>
+                <p class="text-blue-200 mt-2">School Management System</p>
+            </div>
+
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-bold text-blue-100 mb-2">Dooro Doorkaaga (Role)</label>
+                    <div class="relative">
+                        <select id="login-role"
+                            class="w-full p-4 pl-12 bg-white/10 border border-white/20 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-400 placeholder-blue-200/50 appearance-none">
+                            <option value="admin" class="text-gray-800">Maamule (Admin)</option>
+                            <option value="teacher" class="text-gray-800">Macalin (Teacher)</option>
+                            <option value="accountant" class="text-gray-800">Xisaabiye (Accountant)</option>
+                        </select>
+                        <i data-lucide="user-circle"
+                            class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-200"></i>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-blue-100 mb-2">Lambarka Sirta (Password)</label>
+                    <div class="relative">
+                        <input id="login-pass" type="password" placeholder="Gali Password-ka"
+                            class="w-full p-4 pl-12 bg-white/10 border border-white/20 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-400 placeholder-blue-200/50"
+                            required>
+                        <i data-lucide="lock"
+                            class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-200"></i>
+                    </div>
+                </div>
+
+                <button type="submit"
+                    class="w-full py-4 bg-white text-blue-600 rounded-xl font-bold text-lg hover:bg-blue-50 transition-colors shadow-lg shadow-blue-900/20">
+                    Gal (Login)
+                </button>
+            </form>
+
+            <p id="login-error"
+                class="text-red-300 text-sm text-center mt-4 hidden font-bold bg-red-900/20 p-2 rounded-lg border border-red-500/30">
+            </p>
+
+            <!-- Login Screen Sync Button -->
+            <div class="mt-8 pt-6 border-t border-white/10 text-center">
+                <button onclick="store.fetchCloudData()"
+                    class="text-blue-200 hover:text-white transition-colors flex items-center justify-center gap-2 mx-auto font-bold">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                    Ma rabtaa inaad xogta Cloud-ka soo jiidato?
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FLOATING SYNC BUTTON (ALWAYS VISIBLE) -->
+    <button onclick="store.fetchCloudData()"
+        class="fixed bottom-10 right-10 z-[200] w-24 h-24 bg-green-500 text-white rounded-full shadow-2xl shadow-green-400 flex flex-col items-center justify-center gap-1 hover:bg-green-600 hover:scale-110 active:scale-95 transition-all animate-pulse">
+        <i data-lucide="refresh-cw" class="w-10 h-10"></i>
+        <span class="text-[10px] font-black uppercase tracking-tighter">Sync Now</span>
+    </button>
+
+    <!-- Main App Container (Hidden initially) -->
+    <div id="app-container" class="flex h-screen w-full relative hidden">
+        <!-- Background Blobs for Glass Effect -->
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+            <div
+                class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob">
+            </div>
+            <div
+                class="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000">
+            </div>
+            <div
+                class="absolute -bottom-8 left-20 w-[40%] h-[40%] bg-pink-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000">
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="w-20 lg:w-72 bg-white border-r border-indigo-50 flex flex-col transition-all duration-300 z-50">
+            <div class="h-24 flex items-center justify-center lg:justify-start lg:px-8 border-b border-indigo-50">
+                <div
+                    class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200 shrink-0">
+                    <i data-lucide="graduation-cap" class="w-6 h-6 text-white"></i>
+                </div>
+                <span class="hidden lg:block ml-3 font-black text-xl text-gray-800 tracking-tight">AL-WAFAAA</span>
+            </div>
+
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+                <a id="nav-dashboard" href="#dashboard" onclick="router.navigate('dashboard'); return false;"
+                    class="nav-item group flex items-center p-3 rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all active">
+                    <i data-lucide="layout-grid"
+                        class="w-6 h-6 shrink-0 group-hover:scale-110 transition-transform"></i>
+                    <span class="hidden lg:block ml-3 font-bold">Dashboard</span>
+                </a>
+
+                <a id="nav-students" href="#students" onclick="router.navigate('students'); return false;"
+                    class="nav-item group flex items-center p-3 rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
+                    <i data-lucide="users" class="w-6 h-6 shrink-0 group-hover:scale-110 transition-transform"></i>
+                    <span class="hidden lg:block ml-3 font-bold">Ardayda</span>
+                </a>
+
+                <a id="nav-teachers" href="#teachers" onclick="router.navigate('teachers'); return false;"
+                    class="nav-item group flex items-center p-3 rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
+                    <i data-lucide="book-open" class="w-6 h-6 shrink-0 group-hover:scale-110 transition-transform"></i>
+                    <span class="hidden lg:block ml-3 font-bold">Macalimiinta</span>
+                </a>
+
+                <a id="nav-attendance" href="#attendance" onclick="router.navigate('attendance'); return false;"
+                    class="nav-item group flex items-center p-3 rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
+                    <i data-lucide="calendar-check"
+                        class="w-6 h-6 shrink-0 group-hover:scale-110 transition-transform"></i>
+                    <span class="hidden lg:block ml-3 font-bold">Xaadirinta</span>
+                </a>
+
+                <a id="nav-finance" href="#finance" onclick="router.navigate('finance'); return false;"
+                    class="nav-item group flex items-center p-3 rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
+                    <i data-lucide="wallet" class="w-6 h-6 shrink-0 group-hover:scale-110 transition-transform"></i>
+                    <span class="hidden lg:block ml-3 font-bold">Dhaqaalaha</span>
+                </a>
+
+                <a id="nav-reports" href="#reports"
+                    onclick="renderReports.init(); router.navigate('reports'); return false;"
+                    class="nav-item group flex items-center p-3 rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
+                    <i data-lucide="printer" class="w-6 h-6 shrink-0 group-hover:scale-110 transition-transform"></i>
+                    <span class="hidden lg:block ml-3 font-bold">Warbixino</span>
+                </a>
+
+                <a id="nav-classes" href="#classes" onclick="router.navigate('classes'); return false;"
+                    class="nav-item group flex items-center p-3 rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
+                    <i data-lucide="layout-grid"
+                        class="w-6 h-6 shrink-0 group-hover:scale-110 transition-transform"></i>
+                    <span class="hidden lg:block ml-3 font-bold">Fasallada</span>
+                </a>
+
+                <a id="nav-exams" href="#exams" onclick="router.navigate('exams'); return false;"
+                    class="nav-item group flex items-center p-3 rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
+                    <i data-lucide="file-spreadsheet"
+                        class="w-6 h-6 shrink-0 group-hover:scale-110 transition-transform"></i>
+                    <span class="hidden lg:block ml-3 font-bold">Imtixaanaadka</span>
+                </a>
+
+                <div class="pt-4 mt-4 border-t border-indigo-50">
+                    <button onclick="store.fetchCloudData()"
+                        class="w-full flex items-center p-3 rounded-xl text-green-600 hover:bg-green-50 transition-all group">
+                        <i data-lucide="refresh-cw" class="w-6 h-6 shrink-0 group-active:animate-spin"></i>
+                        <span class="hidden lg:block ml-3 font-bold tracking-tight">Cusboonaysii (Sync)</span>
+                    </button>
+                </div>
+            </nav>
+
+            <div class="p-4 border-t border-indigo-50">
+                <button onclick="auth.logout()"
+                    class="w-full flex items-center p-3 rounded-xl text-red-500 hover:bg-red-50 transition-all">
+                    <i data-lucide="log-out" class="w-6 h-6 shrink-0"></i>
+                    <span class="hidden lg:block ml-3 font-bold">Ka Bax (Logout)</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 h-full overflow-hidden flex flex-col">
+            <!-- Header -->
+            <header class="glass-card rounded-2xl p-4 mb-6 flex justify-between items-center">
+                <h2 id="page-title" class="text-3xl font-black text-gray-800 flex items-center gap-3">
+                    <i data-lucide="layout-dashboard" class="text-indigo-600"></i>
+                    Dashboard
+                </h2>
+                <div class="flex items-center gap-4">
+                    <div id="cloud-status"
+                        class="hidden flex items-center gap-2 px-3 py-1.5 bg-gray-50 text-gray-600 rounded-full text-[10px] uppercase font-black border border-gray-100 shadow-sm">
+                        <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                        <span>Checking...</span>
+                    </div>
+                    <button onclick="store.fetchCloudData()" id="btn-sync-cloud"
+                        class="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all shadow-lg shadow-green-100 group animate-bounce-subtle">
+                        <i data-lucide="rotate-cw" class="w-5 h-5 group-active:animate-spin"></i>
+                        <span class="text-sm font-black uppercase tracking-wider">Sync Now</span>
+                    </button>
+                    <div class="bg-white/50 p-2 rounded-xl text-indigo-600 font-mono font-bold" id="current-date">
+                        <!-- Date injected via JS -->
+                    </div>
+                    <button
+                        class="bg-indigo-600 text-white px-6 py-2 rounded-xl hover:bg-indigo-700 transition-colors font-bold shadow-lg shadow-indigo-200">
+                        Log Out
+                    </button>
+                </div>
+            </header>
+
+            <!-- Scrollable Content Area -->
+            <div id="content-area" class="flex-1 overflow-y-auto custom-scrollbar pr-2 pb-20">
+
+                <!-- VIEW: Dashboard -->
+                <div id="dashboard-view" class="view-section animate-fade-in space-y-6">
+                    <!-- Stats Cards -->
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div
+                            class="glass-card p-6 rounded-3xl relative overflow-hidden group hover:scale-[1.02] transition-transform">
+                            <div
+                                class="absolute -right-6 -top-6 w-32 h-32 bg-indigo-100 rounded-full opacity-50 blur-2xl group-hover:bg-indigo-200 transition-colors">
+                            </div>
+                            <div class="relative z-10">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-sm font-bold text-indigo-500 uppercase tracking-wider">Tirada
+                                            Ardayda</p>
+                                        <h3 class="text-4xl font-black text-gray-800 mt-2" id="dash-total-students">0
+                                        </h3>
+                                    </div>
+                                    <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+                                        <i data-lucide="users" class="w-8 h-8"></i>
+                                    </div>
+                                </div>
+                                <div
+                                    class="mt-4 flex items-center gap-2 text-sm font-semibold text-green-600 bg-green-50 w-fit px-3 py-1 rounded-full">
+                                    <i data-lucide="trending-up" class="w-4 h-4"></i>
+                                    <span>Ardayda Dhigata</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            class="glass-card p-6 rounded-3xl relative overflow-hidden group hover:scale-[1.02] transition-transform">
+                            <div
+                                class="absolute -right-6 -top-6 w-32 h-32 bg-purple-100 rounded-full opacity-50 blur-2xl group-hover:bg-purple-200 transition-colors">
+                            </div>
+                            <div class="relative z-10">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-sm font-bold text-purple-500 uppercase tracking-wider">Tirada
+                                            Macalimiinta</p>
+                                        <h3 class="text-4xl font-black text-gray-800 mt-2" id="dash-total-teachers">0
+                                        </h3>
+                                    </div>
+                                    <div class="p-3 bg-purple-50 text-purple-600 rounded-2xl">
+                                        <i data-lucide="book-open" class="w-8 h-8"></i>
+                                    </div>
+                                </div>
+                                <div
+                                    class="mt-4 flex items-center gap-2 text-sm font-semibold text-purple-600 bg-purple-50 w-fit px-3 py-1 rounded-full">
+                                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                    <span>Macalimiinta Academy-ga</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            class="glass-card p-6 rounded-3xl relative overflow-hidden group hover:scale-[1.02] transition-transform">
+                            <div
+                                class="absolute -right-6 -top-6 w-32 h-32 bg-orange-100 rounded-full opacity-50 blur-2xl group-hover:bg-orange-200 transition-colors">
+                            </div>
+                            <div class="relative z-10">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-sm font-bold text-orange-500 uppercase tracking-wider">Boqolleyda
+                                            Xaadirinta</p>
+                                        <h3 class="text-4xl font-black text-gray-800 mt-2" id="dash-attendance">0%</h3>
+                                    </div>
+                                    <div class="p-3 bg-orange-50 text-orange-600 rounded-2xl">
+                                        <i data-lucide="calendar-check" class="w-8 h-8"></i>
+                                    </div>
+                                </div>
+                                <div
+                                    class="mt-4 flex items-center gap-2 text-sm font-semibold text-gray-500 bg-gray-50 w-fit px-3 py-1 rounded-full">
+                                    <i data-lucide="activity" class="w-4 h-4"></i>
+                                    <span>Xaadirinta Maanta</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gender Stats & Calendar Row -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Gender Distribution -->
+                        <div class="glass-card p-8 rounded-3xl relative overflow-hidden">
+                            <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                                <i data-lucide="pie-chart" class="text-indigo-600"></i>
+                                Gender Distribution (Wiilal & Gabdho)
+                            </h3>
+                            <div id="gender-container">
+                                <!-- Injected via JS -->
+                            </div>
+                        </div>
+
+                        <!-- Calendar Widget -->
+                        <div class="glass-card p-8 rounded-3xl">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                    <i data-lucide="calendar" class="text-indigo-600"></i>
+                                    Calendar (Kalandarka)
+                                </h3>
+                                <span id="calendar-month-year"
+                                    class="text-sm font-bold text-gray-400 uppercase tracking-widest"></span>
+                            </div>
+                            <div id="calendar-widget" class="calendar-container">
+                                <!-- Injected via JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions Grid -->
+                    <div class="mt-8">
+                        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                            <i data-lucide="zap" class="w-6 h-6 text-yellow-500"></i>
+                            Quick Actions (Hawlaha Deg-dega ah)
+                        </h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <!-- New Student -->
+                            <button id="btn-quick-student" onclick="router.navigate('students')"
+                                class="group relative overflow-hidden p-8 rounded-3xl bg-white border border-gray-100 shadow-xl shadow-gray-100 hover:shadow-2xl hover:shadow-blue-200 transition-all duration-300 text-left hover:-translate-y-1">
+                                <div
+                                    class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110">
+                                </div>
+                                <div class="relative z-10">
+                                    <div
+                                        class="w-14 h-14 rounded-2xl bg-blue-500 text-white flex items-center justify-center shadow-lg shadow-blue-200 mb-4 group-hover:scale-110 transition-transform">
+                                        <i data-lucide="user-plus" class="w-7 h-7"></i>
+                                    </div>
+                                    <h4 class="text-xl font-black text-gray-800 mb-1">Arday Cusub</h4>
+                                    <p class="text-sm text-gray-500 font-medium">Ku dar Arday Cusub</p>
+                                </div>
+                            </button>
+
+                            <!-- Finance -->
+                            <button id="btn-quick-finance" onclick="router.navigate('finance')"
+                                class="group relative overflow-hidden p-8 rounded-3xl bg-white border border-gray-100 shadow-xl shadow-gray-100 hover:shadow-2xl hover:shadow-green-200 transition-all duration-300 text-left hover:-translate-y-1">
+                                <div
+                                    class="absolute top-0 right-0 w-32 h-32 bg-green-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110">
+                                </div>
+                                <div class="relative z-10">
+                                    <div
+                                        class="w-14 h-14 rounded-2xl bg-green-500 text-white flex items-center justify-center shadow-lg shadow-green-200 mb-4 group-hover:scale-110 transition-transform">
+                                        <i data-lucide="wallet" class="w-7 h-7"></i>
+                                    </div>
+                                    <h4 class="text-xl font-black text-gray-800 mb-1">Dhaqaalaha</h4>
+                                    <p class="text-sm text-gray-500 font-medium">Maamulka Lacagaha</p>
+                                </div>
+                            </button>
+
+                            <!-- Take Attendance -->
+                            <button id="btn-quick-attendance" onclick="router.navigate('attendance')"
+                                class="group relative overflow-hidden p-8 rounded-3xl bg-white border border-gray-100 shadow-xl shadow-gray-100 hover:shadow-2xl hover:shadow-purple-200 transition-all duration-300 text-left hover:-translate-y-1">
+                                <div
+                                    class="absolute top-0 right-0 w-32 h-32 bg-purple-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110">
+                                </div>
+                                <div class="relative z-10">
+                                    <div
+                                        class="w-14 h-14 rounded-2xl bg-purple-500 text-white flex items-center justify-center shadow-lg shadow-purple-200 mb-4 group-hover:scale-110 transition-transform">
+                                        <i data-lucide="calendar-check" class="w-7 h-7"></i>
+                                    </div>
+                                    <h4 class="text-xl font-black text-gray-800 mb-1">Xaadirinta</h4>
+                                    <p class="text-sm text-gray-500 font-medium">Qaad Xaadirinta Maanta</p>
+                                </div>
+                            </button>
+
+                            <!-- Print Reports -->
+                            <button id="btn-quick-reports" onclick="renderReports.init(); router.navigate('reports')"
+                                class="group relative overflow-hidden p-8 rounded-3xl bg-white border border-gray-100 shadow-xl shadow-gray-100 hover:shadow-2xl hover:shadow-orange-200 transition-all duration-300 text-left hover:-translate-y-1">
+                                <div
+                                    class="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110">
+                                </div>
+                                <div class="relative z-10">
+                                    <div
+                                        class="w-14 h-14 rounded-2xl bg-orange-500 text-white flex items-center justify-center shadow-lg shadow-orange-200 mb-4 group-hover:scale-110 transition-transform">
+                                        <i data-lucide="printer" class="w-7 h-7"></i>
+                                    </div>
+                                    <h4 class="text-xl font-black text-gray-800 mb-1">Warbixino</h4>
+                                    <p class="text-sm text-gray-500 font-medium">Daabac Warbixinada</p>
+                                </div>
+                            </button>
+
+                            <!-- Sync Now Action -->
+                            <button onclick="store.fetchCloudData()"
+                                class="group relative overflow-hidden p-8 rounded-3xl bg-green-600 text-white shadow-xl shadow-green-200 hover:shadow-2xl hover:bg-green-700 transition-all duration-300 text-left hover:-translate-y-1">
+                                <div
+                                    class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110">
+                                </div>
+                                <div class="relative z-10">
+                                    <div
+                                        class="w-14 h-14 rounded-2xl bg-white text-green-600 flex items-center justify-center shadow-lg mb-4 group-hover:rotate-180 transition-transform duration-500">
+                                        <i data-lucide="refresh-cw" class="w-7 h-7"></i>
+                                    </div>
+                                    <h4 class="text-xl font-black mb-1">Cusboonaysii</h4>
+                                    <p class="text-sm text-green-100 font-medium">Ka soo jiid xogta</p>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Data Management Section -->
+                    <div class="mt-8 pb-8">
+                        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                            <i data-lucide="database" class="w-6 h-6 text-indigo-600"></i>
+                            Maamulka Xogta (Data Management)
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <!-- Backup Button -->
+                            <button onclick="store.exportData()"
+                                class="glass-card p-6 flex items-center justify-between group hover:scale-[1.02] transition-transform border-l-4 border-green-500">
+                                <div class="flex items-center gap-4">
+                                    <div
+                                        class="p-3 bg-green-50 text-green-600 rounded-2xl group-hover:bg-green-600 group-hover:text-white transition-colors">
+                                        <i data-lucide="download" class="w-6 h-6"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-gray-800 text-lg">Keydi Nuqul (Backup)</p>
+                                        <p class="text-sm text-gray-500 font-medium">Download-gareey nuqul.</p>
+                                    </div>
+                                </div>
+                                <i data-lucide="chevron-right"
+                                    class="text-gray-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all"></i>
+                            </button>
+
+                            <!-- Restore Button -->
+                            <div class="relative">
+                                <input type="file" id="import-input" onchange="store.importData(event)" class="hidden"
+                                    accept=".json">
+                                <button onclick="document.getElementById('import-input').click()"
+                                    class="glass-card p-6 w-full flex items-center justify-between group hover:scale-[1.02] transition-transform border-l-4 border-orange-500">
+                                    <div class="flex items-center gap-4">
+                                        <div
+                                            class="p-3 bg-orange-50 text-orange-600 rounded-2xl group-hover:bg-orange-600 group-hover:text-white transition-colors">
+                                            <i data-lucide="upload" class="w-6 h-6"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-gray-800 text-lg">Soo Celi Nuqul (Restore)</p>
+                                            <p class="text-sm text-gray-500 font-medium">Ka soo rabo xog hore.</p>
+                                        </div>
+                                    </div>
+                                    <i data-lucide="chevron-right"
+                                        class="text-gray-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all"></i>
+                                </button>
+                            </div>
+
+                            <!-- Cloud Sync Button -->
+                            <button onclick="cloudSync.openSettings()"
+                                class="glass-card p-6 flex items-center justify-between group hover:scale-[1.02] transition-transform border-l-4 border-indigo-500">
+                                <div class="flex items-center gap-4">
+                                    <div
+                                        class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                        <i data-lucide="cloud-lightning" class="w-6 h-6"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-gray-800 text-lg">Cloud Sync (Online)</p>
+                                        <p class="text-sm text-gray-500 font-medium">U guur xogta online (Supabase).</p>
+                                    </div>
+                                </div>
+                                <i data-lucide="settings"
+                                    class="text-gray-300 group-hover:text-indigo-600 group-hover:rotate-45 transition-all"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Students View -->
+                <section id="view-students" class="page-view hidden animate-fade-in">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h1 class="text-3xl font-black text-gray-800">Maamulka Ardayda</h1>
+                            <p class="text-gray-500">Diiwaangali, wax ka badal ama la soco xogta ardayda.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <div class="relative">
+                                <input type="text" id="student-search" placeholder="Raadi ardayga..."
+                                    class="pl-10 pr-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all w-64">
+                                <i data-lucide="search"
+                                    class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                            </div>
+                            <button onclick="renderStudents.openModal()"
+                                class="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 active:scale-95">
+                                <i data-lucide="user-plus" class="w-5 h-5"></i>
+                                Diiwaangeli Arday Cusub
+                            </button>
+                        </div>
+                    </div>
+                    <div class="glass-card rounded-2xl overflow-hidden p-1">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left" id="students-table">
+                                <thead class="bg-gray-50/50 border-b border-gray-100">
+                                    <tr>
+                                        <th class="p-4 text-sm font-semibold text-gray-600">ID</th>
+                                        <th class="p-4 text-sm font-semibold text-gray-600">Magaca</th>
+                                        <th class="p-4 text-sm font-semibold text-gray-600">Fasalka</th>
+                                        <th class="p-4 text-sm font-semibold text-gray-600">Da'da</th>
+                                        <th class="p-4 text-sm font-semibold text-gray-600">Goobta Dhalashada</th>
+                                        <th class="p-4 text-sm font-semibold text-gray-600">Waalidka</th>
+                                        <th class="p-4 text-sm font-semibold text-gray-600">Telefoonka</th>
+                                        <th class="p-4 text-sm font-semibold text-gray-600">Address</th>
+                                        <th class="p-4 text-sm font-semibold text-gray-600">Masuulka</th>
+                                        <th class="p-4 text-sm font-semibold text-gray-600">Diiwaangalka</th>
+                                        <th class="p-4 text-sm font-semibold text-gray-600">Ficilada</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 text-sm">
+                                    <!-- Student Rows will be injected here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Teachers View -->
+                <section id="view-teachers" class="page-view hidden animate-fade-in">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h1 class="text-3xl font-black text-gray-800">Maamulka Macalimiinta</h1>
+                            <p class="text-gray-500">Diiwaangali, wax ka badal ama la soco xogta macalimiinta.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <div class="relative">
+                                <input type="text" id="teacher-search" placeholder="Raadi macalin..."
+                                    class="pl-10 pr-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all w-64">
+                                <i data-lucide="search"
+                                    class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                            </div>
+                            <button onclick="renderTeachers.openModal()"
+                                class="bg-green-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-green-700 transition-all shadow-xl shadow-green-100 active:scale-95">
+                                <i data-lucide="user-plus" class="w-5 h-5"></i>
+                                Diiwaangeli Macalin Cusub
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-2xl overflow-hidden p-1">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left" id="teachers-table">
+                                <thead class="bg-gray-50/50 border-b border-gray-100">
+                                    <tr>
+                                        <th class="p-4 text-sm font-semibold text-gray-600">ID</th>
+                                        <th class="p-4 text-sm font-semibold text-gray-600">Magaca</th>
+                                        <th class="p-4 text-sm font-semibold text-gray-600">Telefoonka</th>
+                                        <th class="p-4 text-sm font-semibold text-gray-600">Email</th>
+                                        <th class="p-4 text-sm font-semibold text-gray-600">Ficilada</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 text-sm">
+                                    <!-- Teacher Rows will be injected here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="view-attendance" class="page-view hidden animate-fade-in space-y-8">
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div>
+                            <h1 class="text-3xl font-black text-gray-800 uppercase tracking-tight">Xaadirinta Ardayda
+                            </h1>
+                            <p class="text-gray-500 font-medium" id="attendance-summary">Bisha oo dhan (Khamiis & Jimco
+                                keliya)</p>
+                        </div>
+                        <div
+                            class="flex flex-wrap gap-2 items-center bg-white p-2 rounded-xl border border-gray-100 shadow-sm">
+                            <select id="attendance-month"
+                                class="bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold text-gray-700">
+                                <option value="0">January</option>
+                                <option value="1">February</option>
+                                <option value="2">March</option>
+                                <option value="3">April</option>
+                                <option value="4">May</option>
+                                <option value="5">June</option>
+                                <option value="6">July</option>
+                                <option value="7">August</option>
+                                <option value="8">September</option>
+                                <option value="9">October</option>
+                                <option value="10">November</option>
+                                <option value="11">December</option>
+                            </select>
+                            <select id="attendance-year"
+                                class="bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold text-gray-700">
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                                <option value="2027">2027</option>
+                                <option value="2028">2028</option>
+                                <option value="2029">2029</option>
+                                <option value="2030">2030</option>
+                            </select>
+                            <div class="relative">
+                                <i data-lucide="search"
+                                    class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <input type="text" id="attendance-search" placeholder="Raadi Arday..."
+                                    class="bg-gray-50 border border-gray-200 rounded-lg pl-10 pr-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium text-gray-700 w-48"
+                                    oninput="renderAttendance.renderMonth()">
+                            </div>
+                            <button onclick="renderAttendance.save()"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow-lg shadow-blue-200 transition-all font-bold flex items-center gap-2">
+                                <i data-lucide="save" class="w-4 h-4"></i> Keydi
+                            </button>
+                            <button onclick="renderAttendance.print()"
+                                class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg shadow-lg shadow-purple-200 transition-all font-bold flex items-center gap-2">
+                                <i data-lucide="printer" class="w-4 h-4"></i> Daabac
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Stats & Quick Actions -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div
+                            class="glass-card p-4 rounded-xl flex flex-col justify-center gap-2 bg-gradient-to-br from-indigo-50 to-white border-indigo-100">
+                            <p class="text-xs text-indigo-400 font-black uppercase tracking-widest">Informative</p>
+                            <p class="text-[10px] text-gray-500 leading-tight">Guji calaamadaha si aad u badasho
+                                xaadirinta maalin kasta.</p>
+                        </div>
+
+                        <!-- Live Counters -->
+                        <div
+                            class="glass-card p-4 rounded-xl flex items-center justify-between border-b-4 border-green-500">
+                            <div>
+                                <p class="text-gray-500 text-xs font-bold uppercase">Jooga (P)</p>
+                                <h3 class="text-3xl font-bold text-green-600" id="att-count-present">0</h3>
+                            </div>
+                            <div class="bg-green-100 p-2 rounded-lg text-green-600"><i data-lucide="check-circle"
+                                    class="w-5 h-5"></i></div>
+                        </div>
+                        <div
+                            class="glass-card p-4 rounded-xl flex items-center justify-between border-b-4 border-red-500">
+                            <div>
+                                <p class="text-gray-500 text-xs font-bold uppercase">Maqan (A)</p>
+                                <h3 class="text-3xl font-bold text-red-600" id="att-count-absent">0</h3>
+                            </div>
+                            <div class="bg-red-100 p-2 rounded-lg text-red-600"><i data-lucide="x-circle"
+                                    class="w-5 h-5"></i></div>
+                        </div>
+                        <div
+                            class="glass-card p-4 rounded-xl flex items-center justify-between border-b-4 border-yellow-500">
+                            <div>
+                                <p class="text-gray-500 text-xs font-bold uppercase">Fasax (L)</p>
+                                <h3 class="text-3xl font-bold text-yellow-600" id="att-count-late">0</h3>
+                            </div>
+                            <div class="bg-yellow-100 p-2 rounded-lg text-yellow-600"><i data-lucide="calendar-off"
+                                    class="w-5 h-5"></i></div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-2xl overflow-hidden p-1">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left" id="attendance-table">
+                                <thead class="bg-gray-50/50 border-b border-gray-100">
+                                    <tr id="attendance-header-row">
+                                        <th class="p-4 text-sm font-semibold text-gray-600 min-w-[250px]">Magaca Ardayga
+                                        </th>
+                                        <!-- Dates will be injected here -->
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 text-sm">
+                                    <!-- Attendance Rows will be injected here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Exam View -->
+                <section id="view-exams" class="page-view hidden animate-fade-in space-y-6">
+                    <!-- 1. Exam Menu View -->
+                    <div id="exam-menu-view">
+                        <div class="mb-8">
+                            <h1 class="text-3xl font-black text-gray-800">Maamulka Imtixaanaadka</h1>
+                            <p class="text-gray-500">Dooro nooca imtixaanka aad rabto inaad galiso.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- Menu Cards -->
+                            <button onclick="renderExams.openExam('bille1')"
+                                class="group relative bg-white p-6 rounded-3xl border-2 border-blue-50 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-100 transition-all text-left">
+                                <div
+                                    class="w-14 h-14 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <i data-lucide="file-text" class="w-7 h-7"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors">
+                                    Exam Bille 1</h3>
+                                <p class="text-sm text-gray-400 mt-2">Imtixaanka Bisha Koowaad</p>
+                            </button>
+
+                            <button onclick="renderExams.openExam('term')"
+                                class="group relative bg-white p-6 rounded-3xl border-2 border-purple-50 hover:border-purple-500 hover:shadow-xl hover:shadow-purple-100 transition-all text-left">
+                                <div
+                                    class="w-14 h-14 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <i data-lucide="book-open" class="w-7 h-7"></i>
+                                </div>
+                                <h3
+                                    class="text-xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors">
+                                    Exam Term</h3>
+                                <p class="text-sm text-gray-400 mt-2">Imtixaanka Teeramka</p>
+                            </button>
+
+                            <button onclick="renderExams.openExam('bille2')"
+                                class="group relative bg-white p-6 rounded-3xl border-2 border-indigo-50 hover:border-indigo-500 hover:shadow-xl hover:shadow-indigo-100 transition-all text-left">
+                                <div
+                                    class="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <i data-lucide="file-text" class="w-7 h-7"></i>
+                                </div>
+                                <h3
+                                    class="text-xl font-bold text-gray-800 group-hover:text-indigo-600 transition-colors">
+                                    Exam Bille 2</h3>
+                                <p class="text-sm text-gray-400 mt-2">Imtixaanka Bisha Labaad</p>
+                            </button>
+
+                            <button onclick="renderExams.openExam('final')"
+                                class="group relative bg-white p-6 rounded-3xl border-2 border-green-50 hover:border-green-500 hover:shadow-xl hover:shadow-green-100 transition-all text-left">
+                                <div
+                                    class="w-14 h-14 rounded-2xl bg-green-100 text-green-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <i data-lucide="award" class="w-7 h-7"></i>
+                                </div>
+                                <h3
+                                    class="text-xl font-bold text-gray-800 group-hover:text-green-600 transition-colors">
+                                    Exam Final</h3>
+                                <p class="text-sm text-gray-400 mt-2">Imtixaanka Final-ka</p>
+                            </button>
+
+                            <button onclick="renderExams.openExam('quiz')"
+                                class="group relative bg-white p-6 rounded-3xl border-2 border-orange-50 hover:border-orange-500 hover:shadow-xl hover:shadow-orange-100 transition-all text-left">
+                                <div
+                                    class="w-14 h-14 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <i data-lucide="zap" class="w-7 h-7"></i>
+                                </div>
+                                <h3
+                                    class="text-xl font-bold text-gray-800 group-hover:text-orange-600 transition-colors">
+                                    Quiz</h3>
+                                <p class="text-sm text-gray-400 mt-2">Imtixaanka Gaaban</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 2. Marksheet View (Hidden) -->
+                    <div id="exam-marksheet-view" class="hidden animate-fade-in">
+                        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                            <div class="flex items-center gap-4">
+                                <button onclick="renderExams.showMenu()"
+                                    class="p-2 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">
+                                    <i data-lucide="arrow-left" class="w-6 h-6 text-gray-600"></i>
+                                </button>
+                                <div>
+                                    <h1 class="text-3xl font-black text-gray-800" id="marksheet-title">Exam</h1>
+                                    <p class="text-gray-500">Gali dhibcaha maadooyinka (8 columns)</p>
+                                </div>
+                            </div>
+
+                            <!-- Search Bar -->
+                            <div class="relative flex-1 max-w-md mx-4">
+                                <input type="text" id="exam-search" onkeyup="renderExams.filterMarksheet()"
+                                    placeholder="Raadi Arday (Magaca ama ID)..."
+                                    class="w-full pl-10 pr-4 py-3 bg-white border-2 border-gray-100 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all">
+                                <i data-lucide="search"
+                                    class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <button onclick="renderExams.saveMarks()"
+                                    class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg active:scale-95">
+                                    <i data-lucide="save" class="w-5 h-5"></i> Keydi
+                                </button>
+                                <button onclick="renderExams.printMarksheet()"
+                                    class="bg-gray-800 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-gray-900 transition-all shadow-lg active:scale-95">
+                                    <i data-lucide="printer" class="w-5 h-5"></i> Daabac
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Stats will be injected here by JS -->
+
+                        <div class="glass-card rounded-3xl overflow-hidden border border-white/20">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse" id="marksheet-table">
+                                    <thead class="bg-gray-50/80 sticky top-0 backdrop-blur-sm z-10">
+                                        <tr>
+                                            <th
+                                                class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-16">
+                                                ID</th>
+                                            <th
+                                                class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-64">
+                                                Magaca Ardayga</th>
+                                            <th
+                                                class="p-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                                M1</th>
+                                            <th
+                                                class="p-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                                M2</th>
+                                            <th
+                                                class="p-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                                M3</th>
+                                            <th
+                                                class="p-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                                M4</th>
+                                            <th
+                                                class="p-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                                M5</th>
+                                            <th
+                                                class="p-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                                M6</th>
+                                            <th
+                                                class="p-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                                M7</th>
+                                            <th
+                                                class="p-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                                M8</th>
+                                            <th
+                                                class="p-4 text-center text-xs font-black text-indigo-600 uppercase tracking-wider bg-indigo-50">
+                                                Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100 text-sm">
+                                        <!-- Rows injected by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+
+
+                <section id="view-classes" class="page-view hidden animate-fade-in space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h1 class="text-3xl font-black text-gray-800 uppercase tracking-tight">Maamulka Fasallada
+                            </h1>
+                            <p class="text-gray-500 font-medium">Maamul oo baro heerarka kala duwan ee waxbarashadda.
+                            </p>
+                        </div>
+                        <button onclick="renderClasses.openAssignModal()"
+                            class="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 active:scale-95">
+                            <i data-lucide="user-plus" class="w-5 h-5"></i>
+                            Wareejiso Arday
+                        </button>
+                    </div>
+
+                    <div id="classes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Levels will be injected here -->
+                    </div>
+
+                    <div id="level-students-container" class="hidden space-y-6">
+                        <div class="flex items-center justify-between gap-4">
+                            <div class="flex items-center gap-4">
+                                <button onclick="renderClasses.init()"
+                                    class="p-2 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-600 transition-colors">
+                                    <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                                </button>
+                                <h2 id="current-level-title"
+                                    class="text-3xl font-black text-gray-800 uppercase tracking-tight">Level Name</h2>
+                            </div>
+                            <button id="print-level-btn"
+                                class="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 active:scale-95">
+                                <i data-lucide="printer" class="w-4 h-4"></i>
+                                Daabac
+                            </button>
+                        </div>
+                        <div class="glass-card rounded-3xl overflow-hidden p-1">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left" id="level-students-table">
+                                    <thead class="bg-gray-50/50">
+                                        <tr>
+                                            <th class="p-5 text-sm font-bold text-gray-400 uppercase tracking-wider">
+                                                Ardayga</th>
+                                            <th class="p-5 text-sm font-bold text-gray-400 uppercase tracking-wider">ID
+                                            </th>
+                                            <th class="p-5 text-sm font-bold text-gray-400 uppercase tracking-wider">
+                                                Fasalka</th>
+                                            <th
+                                                class="p-5 text-right text-sm font-bold text-gray-400 uppercase tracking-wider">
+                                                Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="view-finance" class="page-view hidden animate-fade-in space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h1 class="text-3xl font-black text-gray-800 uppercase tracking-tight">Dhaqaalaha Maamulka
+                            </h1>
+                            <p class="text-gray-500 font-medium">Maamul oo la soco dakhliga iyo kharashka.</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <button onclick="renderFinance.openModal()"
+                                class="bg-orange-500 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-orange-600 transition-all shadow-xl shadow-orange-100 active:scale-95">
+                                <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                                Ku dar Dhaqaale
+                            </button>
+                            <button onclick="renderFinance.print()"
+                                class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 active:scale-95">
+                                <i data-lucide="printer" class="w-5 h-5"></i>
+                                Daabac
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div
+                            class="glass-card p-6 rounded-3xl relative overflow-hidden group hover:scale-[1.02] transition-transform border-l-8 border-green-500">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-xs font-bold text-green-600 uppercase tracking-wider">Dakhliga Total
+                                    </p>
+                                    <h3 class="text-3xl font-black text-gray-800 mt-2" id="total-income">+$0</h3>
+                                </div>
+                                <div class="p-3 bg-green-50 text-green-600 rounded-2xl">
+                                    <i data-lucide="trending-up" class="w-6 h-6"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="glass-card p-6 rounded-3xl relative overflow-hidden group hover:scale-[1.02] transition-transform border-l-8 border-red-500">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-xs font-bold text-red-600 uppercase tracking-wider">Kharashka Total
+                                    </p>
+                                    <h3 class="text-3xl font-black text-gray-800 mt-2" id="total-expense">-$0</h3>
+                                </div>
+                                <div class="p-3 bg-red-50 text-red-600 rounded-2xl">
+                                    <i data-lucide="trending-down" class="w-6 h-6"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="glass-card p-6 rounded-3xl relative overflow-hidden group hover:scale-[1.02] transition-transform border-l-8 border-indigo-500">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Net Balance
+                                    </p>
+                                    <h3 class="text-3xl font-black text-gray-800 mt-2" id="net-balance">$0</h3>
+                                </div>
+                                <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+                                    <i data-lucide="wallet" class="w-6 h-6"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-3xl overflow-hidden p-1">
+                        <div class="p-4 border-b border-gray-100">
+                            <div class="relative max-w-md">
+                                <i data-lucide="search"
+                                    class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                                <input type="text" id="finance-search" placeholder="Ka raadi dhaqaalaha..."
+                                    class="w-full pl-10 pr-4 py-2 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-orange-500 outline-none text-sm">
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left" id="finance-table">
+                                <thead class="bg-gray-50/50">
+                                    <tr>
+                                        <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                            Taariikh</th>
+                                        <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                            Faahfaahin</th>
+                                        <th
+                                            class="p-4 text-center text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                            Nooca</th>
+                                        <th
+                                            class="p-4 text-right text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                            Lacagta</th>
+                                        <th
+                                            class="p-4 text-center text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                            Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="view-reports" class="page-view hidden animate-fade-in space-y-6">
+                    <div>
+                        <h1 class="text-3xl font-black text-gray-800 uppercase tracking-tight">Warbixino (Reports)</h1>
+                        <p class="text-gray-500 font-medium">Soo saar oo daabac warbixinada akadeemiyada.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div id="report-card-students"
+                            class="glass-card p-8 rounded-3xl group hover:shadow-2xl hover:shadow-blue-100 transition-all border border-white/20 relative overflow-hidden">
+                            <div class="relative z-10">
+                                <div class="flex items-start justify-between mb-6">
+                                    <div
+                                        class="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                                        <i data-lucide="graduation-cap" class="w-7 h-7"></i>
+                                    </div>
+                                    <span
+                                        class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Ardayda</span>
+                                </div>
+                                <h3 class="text-xl font-black text-gray-800 mb-2 tracking-tight">Warbixinta Ardayda</h3>
+                                <p class="text-xs text-gray-500 mb-8 leading-relaxed font-medium line-clamp-2">Liiska
+                                    dhamaystiran ee dhamaan ardayda diiwaangashan.</p>
+                                <div class="flex gap-3 mt-auto">
+                                    <button onclick="renderReports.preview('students')"
+                                        class="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 text-sm">
+                                        <i data-lucide="eye" class="w-4 h-4"></i> Arag
+                                    </button>
+                                    <button onclick="renderReports.print('students')"
+                                        class="flex-1 bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-200 text-sm">
+                                        <i data-lucide="printer" class="w-4 h-4"></i> Daabac
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="report-card-teachers"
+                            class="glass-card p-8 rounded-3xl group hover:shadow-2xl hover:shadow-green-100 transition-all border border-white/20 relative overflow-hidden">
+                            <div class="relative z-10">
+                                <div class="flex items-start justify-between mb-6">
+                                    <div
+                                        class="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center text-green-600 group-hover:bg-green-600 group-hover:text-white transition-all shadow-sm">
+                                        <i data-lucide="users" class="w-7 h-7"></i>
+                                    </div>
+                                    <span
+                                        class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Macalimiinta</span>
+                                </div>
+                                <h3 class="text-xl font-black text-gray-800 mb-2 tracking-tight">Warbixinta Macalimiinta
+                                </h3>
+                                <p class="text-xs text-gray-500 mb-8 leading-relaxed font-medium line-clamp-2">Liiska
+                                    dhamaystiran iyo xogta macalimiinta akadeemiyada.</p>
+                                <div class="flex gap-3">
+                                    <button onclick="renderReports.preview('teachers')"
+                                        class="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 text-sm">
+                                        <i data-lucide="eye" class="w-4 h-4"></i> Arag
+                                    </button>
+                                    <button onclick="renderReports.print('teachers')"
+                                        class="flex-1 bg-green-600 text-white py-2.5 rounded-xl font-bold hover:bg-green-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-200 text-sm">
+                                        <i data-lucide="printer" class="w-4 h-4"></i> Daabac
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="report-card-finance"
+                            class="glass-card p-8 rounded-3xl group hover:shadow-2xl hover:shadow-orange-100 transition-all border border-white/20 relative overflow-hidden">
+                            <div class="relative z-10">
+                                <div class="flex items-start justify-between mb-6">
+                                    <div
+                                        class="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600 group-hover:bg-orange-600 group-hover:text-white transition-all shadow-sm">
+                                        <i data-lucide="wallet" class="w-7 h-7"></i>
+                                    </div>
+                                    <span
+                                        class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Dhaqaalaha</span>
+                                </div>
+                                <h3 class="text-xl font-black text-gray-800 mb-2 tracking-tight">Warbixinta Dhaqaalaha
+                                </h3>
+                                <p class="text-xs text-gray-500 mb-8 leading-relaxed font-medium line-clamp-2">Xisaab
+                                    xirka dakhliga iyo kharashka akadeemiyada.</p>
+                                <div class="flex gap-3">
+                                    <button onclick="renderReports.preview('finance')"
+                                        class="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 text-sm">
+                                        <i data-lucide="eye" class="w-4 h-4"></i> Arag
+                                    </button>
+                                    <button onclick="renderReports.print('finance')"
+                                        class="flex-1 bg-orange-600 text-white py-2.5 rounded-xl font-bold hover:bg-orange-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-orange-200 text-sm">
+                                        <i data-lucide="printer" class="w-4 h-4"></i> Daabac
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="report-card-attendance"
+                            class="glass-card p-8 rounded-3xl group hover:shadow-2xl hover:shadow-purple-100 transition-all border border-white/20 relative overflow-hidden">
+                            <div class="relative z-10">
+                                <div class="flex items-start justify-between mb-6">
+                                    <div
+                                        class="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-all shadow-sm">
+                                        <i data-lucide="calendar-check" class="w-7 h-7"></i>
+                                    </div>
+                                    <span
+                                        class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Xaadirinta</span>
+                                </div>
+                                <h3 class="text-xl font-black text-gray-800 mb-2 tracking-tight">Warbixinta Xaadirinta
+                                </h3>
+                                <p class="text-xs text-gray-500 mb-8 leading-relaxed font-medium line-clamp-2">
+                                    Xaadirinta maalinlaha ah ee dhamaan ardayda.</p>
+                                <div class="flex gap-3">
+                                    <button onclick="renderReports.preview('attendance')"
+                                        class="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 text-sm">
+                                        <i data-lucide="eye" class="w-4 h-4"></i> Arag
+                                    </button>
+                                    <button onclick="renderReports.print('attendance')"
+                                        class="flex-1 bg-purple-600 text-white py-2.5 rounded-xl font-bold hover:bg-purple-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-200 text-sm">
+                                        <i data-lucide="printer" class="w-4 h-4"></i> Daabac
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="report-card-exams"
+                            class="glass-card p-10 rounded-[2.5rem] group hover:shadow-2xl hover:shadow-indigo-100 transition-all border border-white/20 relative overflow-hidden">
+                            <div
+                                class="absolute -right-4 -top-4 w-32 h-32 bg-indigo-50 rounded-full blur-3xl opacity-50 group-hover:opacity-100 transition-opacity">
+                            </div>
+                            <div class="relative z-10">
+                                <div class="flex items-start justify-between mb-8">
+                                    <div
+                                        class="w-16 h-16 bg-indigo-50 rounded-3xl flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white group-hover:scale-110 transition-all shadow-sm">
+                                        <i data-lucide="file-spreadsheet" class="w-8 h-8"></i>
+                                    </div>
+                                    <span
+                                        class="bg-indigo-100 text-indigo-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">Imtixaanaadka</span>
+                                </div>
+                                <h3 class="text-3xl font-black text-gray-800 mb-3 tracking-tight">Warbixinta
+                                    Imtixaanaadka</h3>
+                                <p class="text-sm text-gray-500 mb-10 leading-relaxed font-medium">Soo arag ama daabac
+                                    natiijooyinka imtixaanaadka ee ardayda dhameystiran.</p>
+                                <div class="flex gap-4">
+                                    <button onclick="renderReports.preview('exams')"
+                                        class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-2xl font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
+                                        <i data-lucide="eye" class="w-5 h-5"></i> Arag
+                                    </button>
+                                    <button onclick="renderReports.print('exams')"
+                                        class="flex-1 bg-indigo-600 text-white py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-200 active:scale-95">
+                                        <i data-lucide="printer" class="w-5 h-5"></i> Daabac
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+        </main>
+    </div>
+
+    <!-- Modals Overlay -->
+    <div id="modal-overlay"
+        class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <!-- Dynamic Modal Content injected here -->
+        <div id="modal-content"
+            class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-y-auto max-h-[90vh] animate-scale-up">
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+    <!-- Print Container (Hidden on Screen) -->
+    <div id="print-frame"></div>
+</body>
+
+</html>
